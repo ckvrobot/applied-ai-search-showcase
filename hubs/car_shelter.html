@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Размещение машины: Заказ гаража под ключ, детали по чертежам или готовый навес без сварки</title>
+    <style>
+        :root {
+            --bg: #0d1117; --card-bg: #161b22; --border: #30363d;
+            --text: #c9d1d9; --heading: #f0f6fc; --accent: #58a6ff;
+            --green: #3fb950; --orange: #f0883e;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg); color: var(--text); line-height: 1.6; padding: 28px 16px;
+        }
+        .container { max-width: 960px; margin: 0 auto; }
+        .back-link {
+            display: inline-flex; align-items: center; gap: 6px; color: var(--accent);
+            text-decoration: none; font-size: 14px; font-weight: 600; margin-bottom: 24px;
+        }
+        .back-link:hover { text-decoration: underline; }
+        header { margin-bottom: 32px; border-bottom: 1px solid var(--border); padding-bottom: 20px; }
+        h1 { color: var(--heading); font-size: 28px; line-height: 1.3; margin-bottom: 12px; }
+        .subtitle { color: #8b949e; font-size: 16px; }
+        .card {
+            background: var(--card-bg); border: 1px solid var(--border);
+            border-radius: 10px; padding: 22px; margin-bottom: 24px;
+        }
+        h2 { color: var(--heading); font-size: 20px; margin-bottom: 12px; }
+        p { margin-bottom: 14px; font-size: 15px; }
+        .result-box {
+            background: rgba(63, 185, 80, 0.1); border-left: 4px solid var(--green);
+            padding: 16px 20px; border-radius: 0 8px 8px 0; margin: 20px 0;
+        }
+        .btn-action {
+            display: inline-flex; align-items: center; gap: 8px; background: #238636;
+            color: #fff; text-decoration: none; padding: 10px 18px; border-radius: 6px;
+            font-weight: 600; font-size: 14px; transition: background 0.2s;
+        }
+        .btn-action:hover { background: #2ea043; }
+        .btn-action.secondary { background: #21262d; border: 1px solid var(--border); color: #c9d1d9; }
+        .btn-action.secondary:hover { background: #30363d; color: #fff; }
+        .grid-compare { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin: 20px 0; }
+        .compare-col { background: #21262d; border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+        .compare-col h3 { font-size: 15px; color: var(--heading); margin-bottom: 8px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="../index.html" class="back-link">← Вернуться на главную историю</a>
+        
+        <header>
+            <h1>Заказ гаража под ключ полностью, изготовление деталей по чертежам или готовый навес со сборкой без сварки</h1>
+            <div class="subtitle">Уровень 2: Разбор задачи размещения автомобиля, расчет нагрузок по сопромату и наем исполнителей</div>
+        </header>
+
+        <div class="card">
+            <h2>Как образовалась задача</h2>
+            <p>Требовалось организовать надежное укрытие для автомобиля на участке. Площадка имела размеры под габарит пять на семь метров. Встал классический вопрос: строить полноценный закрытый каркасный гараж из бруса или ограничиться арочным металлическим навесом на фермах.</p>
+            <p>Первые запросы на рынке показали огромный разброс предложений: строительные компании за каркасный гараж просили от 360 до 750 тысяч рублей только за работу, а продавцы готовых навесов с Авито предлагали конструкции за 120 - 150 тысяч рублей, обещая надежность под ключ.</p>
+        </div>
+
+        <div class="card">
+            <h2>Арбитраж трех путей реализации</h2>
+            <div class="grid-compare">
+                <div class="compare-col">
+                    <h3>Путь 1: Заказ гаража под ключ у фирм</h3>
+                    <p>Сметы от 360 до 750 тысяч рублей за работу. Прорабы берут на себя весь цикл, но закладывают огромные накладные расходы. В пересчете на реальные человеко-дни переплата составляла от трех до пяти раз.</p>
+                </div>
+                <div class="compare-col">
+                    <h3>Путь 2: Покупка готового серийного навеса</h3>
+                    <p>Продавцы обещают быструю сборку за день. Но когда я запросил сечения металла и загнал их в расчет строительной механики, выяснилось, что стойки и фермы из трубы со стенкой 1.5 мм при снеговой нагрузке 350 кг на метр теряют устойчивость и складываются в первую же снежную зиму.</p>
+                </div>
+                <div class="compare-col">
+                    <h3>Путь 3: Расчет деталей по чертежам и наем прямых мастеров</h3>
+                    <p>Я сам смоделировал пространственную ферму навеса в библиотеке Pynite с нормативным запасом под сталь Ст3сп (стойки d75х5, балки 100х50х3 на ребро), сформировал чертежи КМД и параллельно через автоматизацию приложения Авито нашел прямого мастера по резюме на сдельную оплату за 100 - 150 тысяч рублей.</p>
+                </div>
+            </div>
+
+            <div class="result-box">
+                <p><strong>Результат арбитража:</strong> Физический расчет исключил покупку аварийного навеса со стенкой 1.5 мм. А переключение с раздела услуг на раздел резюме соискателей сэкономило до 500 тысяч рублей на монтаже без потери в прочности конструкции.</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Переход к интерактивным результатам (Уровень 3)</h2>
+            <p>Здесь можно открыть живую 3D-модель навеса с результатами расчета строительной механики и журнал реальных переговоров с мастерами на Авито.</p>
+            <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 16px;">
+                <a href="../projects/naves_canopy_3d/index.html" class="btn-action">Вращать 3D-модель навеса ↗</a>
+                <a href="../projects/avito_contractors/index.html" class="btn-action secondary">Открыть журнал найма на Авито ↗</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
