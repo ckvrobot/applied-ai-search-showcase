@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Clean Box 3D CAD & Размеры КМД</title>
+    <style>
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { margin: 0; padding: 0; overflow: hidden; background: #0f141c; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #fff; touch-action: none; }
+        #canvas-container { width: 100vw; height: 100vh; display: block; touch-action: none; }
+
+        /* Плавающие кнопки быстрого переключения (всегда доступны на телефоне и ПК) */
+        #quick-bar {
+            position: absolute; top: 12px; left: 12px; right: 12px;
+            display: flex; gap: 8px; z-index: 90; pointer-events: none;
+            justify-content: flex-start; align-items: center; flex-wrap: wrap;
+        }
+        .q-btn {
+            pointer-events: auto; background: rgba(22, 27, 34, 0.88); backdrop-filter: blur(10px);
+            color: #f0f6fc; border: 1px solid rgba(255,255,255,0.2); padding: 9px 14px;
+            border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.5); transition: all 0.2s;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .q-btn:hover, .q-btn:active { background: #1f6feb; border-color: #58a6ff; }
+        .q-btn.active { background: #238636; border-color: #3fb950; color: #fff; }
+
+        /* Выдвижная боковая панель с легендой и настройками */
+        #ui-panel {
+            position: absolute; top: 58px; left: 12px; background: rgba(22, 27, 34, 0.95);
+            backdrop-filter: blur(14px); padding: 16px 18px; border-radius: 12px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.7); border: 1px solid rgba(255,255,255,0.18);
+            max-width: 320px; z-index: 100; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s;
+            max-height: calc(100vh - 80px); overflow-y: auto;
+        }
+        #ui-panel.collapsed {
+            transform: translateX(-120%); opacity: 0; pointer-events: none;
+        }
+
+        .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        h2 { margin: 0; font-size: 16px; color: #58a6ff; font-weight: 700; }
+        .close-btn {
+            background: transparent; border: none; color: #8b949e; font-size: 20px;
+            cursor: pointer; padding: 0 4px; line-height: 1;
+        }
+        .close-btn:hover { color: #fff; }
+        p { margin: 0 0 12px 0; font-size: 12px; color: #8b949e; line-height: 1.35; }
+
+        .btn-stack { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+        .action-btn {
+            background: #21262d; color: #c9d1d9; border: 1px solid rgba(255,255,255,0.15);
+            padding: 8px 12px; border-radius: 6px; font-size: 12.5px; font-weight: 600;
+            cursor: pointer; transition: all 0.2s; text-align: left;
+        }
+        .action-btn:hover { background: #30363d; color: #fff; }
+
+        .toggle-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; font-size: 12.5px; color: #c9d1d9; }
+        .legend { font-size: 11.5px; margin-top: 12px; border-top: 1px solid rgba(255,255,255,0.12); padding-top: 10px; }
+        .legend-item { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+        .color-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+        #info-tooltip {
+            position: absolute; bottom: 12px; left: 12px; right: 12px; pointer-events: none;
+            text-align: center; font-size: 11.5px; color: #8b949e;
+            background: rgba(15, 20, 28, 0.75); padding: 6px 10px; border-radius: 6px;
+            margin: 0 auto; max-width: 480px;
+        }
+
+        @media (max-width: 600px) {
+            #ui-panel { width: calc(100vw - 24px); max-width: none; }
+            .q-btn { padding: 7px 11px; font-size: 12px; }
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+    <!-- Плавающая панель быстрого управления (всегда видна на телефоне) -->
+    <div id="quick-bar">
+        <button class="q-btn" id="btn-toggle-menu" onclick="toggleMenu()">☰ Меню</button>
+        <button class="q-btn" id="btn-mode-exp" onclick="setMode('exp')">💥 Взрыв-схема / Детали</button>
+        <button class="q-btn" id="btn-mode-dim" onclick="setMode('dim')">📐 Размеры КМД</button>
+        <button class="q-btn" id="btn-mode-full" onclick="setMode('full')">👁️ Сборка</button>
+        <button class="q-btn" id="btn-mode-frame" onclick="setMode('frame')">⚙️ Каркас</button>
+    </div>
+
+    <!-- Разворачиваемое подробное меню (по умолчанию свернуто на телефонах) -->
+    <div id="ui-panel" class="collapsed">
+        <div class="panel-header">
+            <h2>Clean Box 3D CAD</h2>
+            <button class="close-btn" onclick="toggleMenu()">✕</button>
+        </div>
+        <p>Модуль водоочистки 400 х 600 х 1700 мм</p>
+        
+        <div class="btn-stack">
+            <button class="action-btn" onclick="setCameraView('iso')">🔄 Вид: Изометрия 3D</button>
+            <button class="action-btn" onclick="setCameraView('front')">🟦 Вид спереди (Фасад 400)</button>
+            <button class="action-btn" onclick="setCameraView('side')">🟨 Вид сбоку (Глубина 600)</button>
+            <button class="action-btn" onclick="setCameraView('top')">🟩 Вид сверху (План)</button>
+        </div>
+
+        <div class="toggle-row">
+            <span>Авто-вращение:</span>
+            <input type="checkbox" id="chk-auto-rotate" onchange="controls.autoRotate = this.checked">
+        </div>
+        <div class="toggle-row">
+            <span>Сварные швы:</span>
+            <input type="checkbox" id="chk-welds" checked onchange="groupWelds.visible = this.checked">
+        </div>
+
+        <div class="legend">
+            <div class="legend-item"><span class="color-dot" style="background: #e11d48;"></span> Красные зоны: места сварки (стыки)</div>
+            <div class="legend-item"><span class="color-dot" style="background: #3b82f6;"></span> Каркас труба 30х30х2 мм</div>
+            <div class="legend-item"><span class="color-dot" style="background: #e6a817;"></span> Фланцы 120х120х4 (отв. 80х80 М8)</div>
+            <div class="legend-item"><span class="color-dot" style="background: #10b981;"></span> Сплошной герметичный поддон</div>
+            <div class="legend-item"><span class="color-dot" style="background: #f59e0b;"></span> Кронштейн насоса (2 паза М6)</div>
+            <div class="legend-item"><span class="color-dot" style="background: #000000; border: 1px solid #fff;"></span> Выноски деталей и сечений</div>
+        </div>
+    </div>
+
+    <div id="info-tooltip">1 палец: Вращение 360° | 2 пальца: Зум | Режим «Взрыв-схема» показывает деталировку и стыки сварки</div>
+    <div id="canvas-container"></div>
+
+    <script>
+        let scene, camera, renderer, controls;
+        let groupFrame = new THREE.Group();
+        let groupEquip = new THREE.Group();
+        let groupWelds = new THREE.Group();
+        let groupDimensions = new THREE.Group();
+        let groupExploded = new THREE.Group();
+
+        init();
+        build3DModel();
+        build3DDimensions();
+        buildExplodedModel();
+        setMode('exp'); // По умолчанию открываем во взрыв-схеме с деталировкой и сваркой!
+        animate();
+
+        function init() {
+            const container = document.getElementById('canvas-container');
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0f141c);
+
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.01, 100);
+            camera.position.set(1.5, 1.4, 2.2);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.outputEncoding = THREE.sRGBEncoding;
+            container.appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.06;
+            controls.target.set(0.20, 0.85, 0.30);
+            controls.minDistance = 0.05;
+            controls.maxDistance = 6.0;
+
+            const amb = new THREE.AmbientLight(0xffffff, 0.85);
+            scene.add(amb);
+            const dir1 = new THREE.DirectionalLight(0xffffff, 0.95);
+            dir1.position.set(3, 5, 4);
+            scene.add(dir1);
+            const dir2 = new THREE.DirectionalLight(0x90b0e0, 0.45);
+            dir2.position.set(-3, 3, -3);
+            scene.add(dir2);
+
+            const grid = new THREE.GridHelper(2.5, 25, 0x388bfd, 0x21262d);
+            grid.position.set(0.20, 0, 0.30);
+            scene.add(grid);
+
+            scene.add(groupFrame);
+            scene.add(groupEquip);
+            scene.add(groupWelds);
+            scene.add(groupDimensions);
+            scene.add(groupExploded);
+
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function toggleMenu() {
+            const panel = document.getElementById('ui-panel');
+            panel.classList.toggle('collapsed');
+        }
+
+        function createBox(x0, y0, z0, x1, y1, z1, mat) {
+            const dx = Math.abs(x1 - x0), dy = Math.abs(y1 - y0), dz = Math.abs(z1 - z0);
+            const geo = new THREE.BoxGeometry(dx, dz, dy);
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.set((x0 + x1)/2, (z0 + z1)/2, (y0 + y1)/2);
+            return mesh;
+        }
+
+        function createCyl(cx, cy, z0, z1, r, mat) {
+            const h = Math.abs(z1 - z0);
+            const geo = new THREE.CylinderGeometry(r, r, h, 28);
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.set(cx, (z0 + z1)/2, cy);
+            return mesh;
+        }
+
+        // Создание текста-спрайта для 3D надписей с автоматической подгонкой ширины под любой текст
+        function createTextSprite(text, bgColor = 'rgba(15, 20, 28, 0.95)', textColor = '#ffffff', borderColor = '#58a6ff') {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const fontSize = 26;
+            ctx.font = `bold ${fontSize}px "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif`;
+            
+            // Динамический замер ширины текста
+            const metrics = ctx.measureText(text);
+            const textWidth = Math.ceil(metrics.width);
+            const padX = 36;
+            const padY = 16;
+            
+            canvas.width = Math.max(260, textWidth + padX * 2);
+            canvas.height = fontSize + padY * 2 + 12;
+
+            // Восстановление контекста шрифта после изменения размера холста
+            ctx.font = `bold ${fontSize}px "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif`;
+            ctx.fillStyle = bgColor;
+            ctx.strokeStyle = borderColor;
+            ctx.lineWidth = 4;
+            
+            // Скругленная плашка
+            const r = 12, x = 3, y = 3, w = canvas.width - 6, h = canvas.height - 6;
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.lineTo(x + w - r, y);
+            ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+            ctx.lineTo(x + w, y + h - r);
+            ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+            ctx.lineTo(x + r, y + h);
+            ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+            ctx.lineTo(x, y + r);
+            ctx.quadraticCurveTo(x, y, x + r, y);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Текст строго по центру
+            ctx.fillStyle = textColor;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.minFilter = THREE.LinearFilter;
+            const spriteMat = new THREE.SpriteMaterial({ map: texture, depthTest: false });
+            const sprite = new THREE.Sprite(spriteMat);
+            const aspect = canvas.width / canvas.height;
+            const baseH = 0.052;
+            sprite.scale.set(baseH * aspect, baseH, 1.0);
+            return sprite;
+        }
+
+        // Построение размерной линии со стрелками/засечками и выносными линиями
+        function addDimension(p1, p2, label, offset = [0,0,0], color = 0x000000) {
+            const matLine = new THREE.LineBasicMaterial({ color: 0x58a6ff, linewidth: 2, depthTest: false });
+            const matExt = new THREE.LineBasicMaterial({ color: 0x8b949e, linewidth: 1, transparent: true, opacity: 0.6, depthTest: false });
+            
+            // Точки с учетом смещения
+            const q1 = [p1[0] + offset[0], p1[1] + offset[1], p1[2] + offset[2]];
+            const q2 = [p2[0] + offset[0], p2[1] + offset[1], p2[2] + offset[2]];
+
+            // Выносные линии от детали к размерной линии
+            const geoExt1 = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(p1[0], p1[2], p1[1]),
+                new THREE.Vector3(q1[0], q1[2], q1[1])
+            ]);
+            const geoExt2 = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(p2[0], p2[2], p2[1]),
+                new THREE.Vector3(q2[0], q2[2], q2[1])
+            ]);
+            groupDimensions.add(new THREE.Line(geoExt1, matExt));
+            groupDimensions.add(new THREE.Line(geoExt2, matExt));
+
+            // Главная размерная линия
+            const geoMain = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(q1[0], q1[2], q1[1]),
+                new THREE.Vector3(q2[0], q2[2], q2[1])
+            ]);
+            groupDimensions.add(new THREE.Line(geoMain, matLine));
+
+            // Засечки на концах
+            const tickLen = 0.02;
+            const dir = new THREE.Vector3(q2[0]-q1[0], q2[2]-q1[2], q2[1]-q1[1]).normalize();
+            const normal = new THREE.Vector3(-dir.y, dir.x, dir.z).normalize().multiplyScalar(tickLen);
+            
+            // Текстовая плашка размера
+            const mid = [(q1[0]+q2[0])/2, (q1[1]+q2[1])/2, (q1[2]+q2[2])/2];
+            const sprite = createTextSprite(label);
+            sprite.position.set(mid[0], mid[2], mid[1]);
+            groupDimensions.add(sprite);
+        }
+
+        function build3DModel() {
+            const matSteelHoriz = new THREE.MeshStandardMaterial({ color: 0xdbe4ee, roughness: 0.32, metalness: 0.65 }); // балки чуть светлее серого
+            const matSteelVert = new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.40, metalness: 0.55 });  // стойки темнее серого
+            const matSteel = matSteelHoriz;
+            const matPost = new THREE.MeshStandardMaterial({ color: 0x4a90e2, roughness: 0.4, metalness: 0.5 });
+            const matPlate = new THREE.MeshStandardMaterial({ color: 0xe6a817, roughness: 0.3, metalness: 0.7 });
+            const matTray = new THREE.MeshStandardMaterial({ color: 0x10b981, roughness: 0.4, metalness: 0.4 });
+            const matRed = new THREE.MeshStandardMaterial({ color: 0xd32f2f, roughness: 0.4 });
+            const matSilver = new THREE.MeshStandardMaterial({ color: 0xe0e0e0, roughness: 0.2, metalness: 0.9 });
+            const matBlack = new THREE.MeshStandardMaterial({ color: 0x212121, roughness: 0.7 });
+            const matOrangeWeld = new THREE.MeshStandardMaterial({ color: 0xff5500, emissive: 0xff3300, emissiveIntensity: 0.65, roughness: 0.3 });
+            const matBlue1252 = new THREE.MeshStandardMaterial({ color: 0x1565c0, roughness: 0.35, metalness: 0.3 });
+            const matBlue1054 = new THREE.MeshStandardMaterial({ color: 0x1e88e5, roughness: 0.35, metalness: 0.3 });
+            const matBigBlue = new THREE.MeshStandardMaterial({ color: 0x0d47a1, roughness: 0.3, metalness: 0.2 });
+            const matChrome = new THREE.MeshStandardMaterial({ color: 0xf5f5f5, roughness: 0.15, metalness: 0.95 });
+
+            // 1. СТАЛЬНОЙ КАРКАС: 4 стойки (темнее серого)
+            groupFrame.add(createBox(0.00, 0.00, 0.10, 0.03, 0.03, 1.67, matSteelVert));
+            groupFrame.add(createBox(0.37, 0.00, 0.10, 0.40, 0.03, 1.67, matSteelVert));
+            groupFrame.add(createBox(0.00, 0.57, 0.10, 0.03, 0.60, 1.67, matSteelVert));
+            groupFrame.add(createBox(0.37, 0.57, 0.10, 0.40, 0.60, 1.67, matSteelVert));
+
+            // Нижний пояс (светлее серого)
+            groupFrame.add(createBox(0.03, 0.00, 0.10, 0.37, 0.03, 0.13, matSteelHoriz));
+            groupFrame.add(createBox(0.03, 0.57, 0.10, 0.37, 0.60, 0.13, matSteelHoriz));
+            groupFrame.add(createBox(0.00, 0.03, 0.10, 0.03, 0.57, 0.13, matSteelHoriz));
+            groupFrame.add(createBox(0.37, 0.03, 0.10, 0.40, 0.57, 0.13, matSteelHoriz));
+
+            // Верхний пояс + поперечина (светлее серого)
+            groupFrame.add(createBox(0.00, 0.00, 1.64, 0.40, 0.03, 1.67, matSteelHoriz));
+            groupFrame.add(createBox(0.00, 0.57, 1.64, 0.40, 0.60, 1.67, matSteelHoriz));
+            groupFrame.add(createBox(0.00, 0.03, 1.64, 0.03, 0.57, 1.67, matSteelHoriz));
+            groupFrame.add(createBox(0.37, 0.03, 1.64, 0.40, 0.57, 1.67, matSteelHoriz));
+            groupFrame.add(createBox(0.03, 0.235, 1.64, 0.37, 0.265, 1.67, matSteelHoriz));
+
+            // Сплошной цельный поддон (дно)
+            groupFrame.add(createBox(0.000, 0.000, 0.128, 0.400, 0.600, 0.130, matTray));
+
+            // Нижний наддонный поперечный профиль L=215 мм (опора стойки над дном)
+            groupFrame.add(createBox(0.155, 0.235, 0.130, 0.400, 0.265, 0.160, matSteelHoriz));
+
+            // Сервисная стойка 30х30 (Z=0.130..1.640, X=0.155..0.185, Y=0.235..0.265) - темнее серого (вертикальная)
+            groupFrame.add(createBox(0.155, 0.235, 0.130, 0.185, 0.265, 1.640, matSteelVert));
+
+            // Средние пояса жесткости (светлее серого)
+            groupFrame.add(createBox(0.00, 0.03, 0.85, 0.03, 0.57, 0.88, matSteelHoriz));
+            groupFrame.add(createBox(0.03, 0.57, 0.85, 0.37, 0.60, 0.88, matSteelHoriz));
+
+            // Кронштейны BB20 и BB10: балка и укосина СВЕРХУ пластины! Снизу 100% свободно! Единый светло-серый цвет
+            // BB20:
+            groupFrame.add(createBox(0.240, 0.190, 0.876, 0.360, 0.310, 0.880, matPlate)); // пластина 120х120х4
+            groupFrame.add(createBox(0.185, 0.235, 0.880, 0.300, 0.265, 0.910, matSteelHoriz));  // консоль СВЕРХУ (палец)
+            groupFrame.add(createBox(0.185, 0.247, 0.910, 0.235, 0.253, 0.960, matSteelHoriz)); // косынка СВЕРХУ (палец)
+            for (let [bx, by] of [[0.260, 0.210], [0.340, 0.210], [0.260, 0.290], [0.340, 0.290]]) {
+                groupFrame.add(createCyl(bx, by, 0.870, 0.886, 0.0045, matSilver));
+            }
+
+            // BB10:
+            groupFrame.add(createBox(0.240, 0.190, 1.376, 0.360, 0.310, 1.380, matPlate)); // пластина 120х120х4
+            groupFrame.add(createBox(0.185, 0.235, 1.380, 0.300, 0.265, 1.410, matSteelHoriz));  // консоль СВЕРХУ (палец)
+            groupFrame.add(createBox(0.185, 0.247, 1.410, 0.235, 0.253, 1.460, matSteelHoriz)); // косынка СВЕРХУ (палец)
+            for (let [bx, by] of [[0.260, 0.210], [0.340, 0.210], [0.260, 0.290], [0.340, 0.290]]) {
+                groupFrame.add(createCyl(bx, by, 1.370, 1.386, 0.0045, matSilver));
+            }
+
+            // Кронштейн насоса (повернут на 90 град в сторону малой колонны 1054, открывая доступ к BB10):
+            groupFrame.add(createBox(0.155, 0.135, 1.410, 0.185, 0.235, 1.440, matSteelHoriz)); // палец L=100
+            groupFrame.add(createBox(0.110, 0.085, 1.440, 0.230, 0.235, 1.444, matPlate)); // площадка 150х120х4
+
+            // Связка сервисной стойки
+            groupFrame.add(createBox(0.185, 0.235, 0.880, 0.370, 0.265, 0.910, matSteelHoriz));
+
+            // Площадка розеток
+            groupFrame.add(createBox(0.000, 0.230, 1.530, 0.006, 0.370, 1.640, matPlate));
+
+            // Опорные пластины
+            const plates = [
+                [0.00, 0.00, 0.08, 0.08, 0.04, 0.04],
+                [0.32, 0.00, 0.40, 0.08, 0.36, 0.04],
+                [0.00, 0.52, 0.08, 0.60, 0.04, 0.56],
+                [0.32, 0.52, 0.40, 0.60, 0.36, 0.56],
+            ];
+            plates.forEach(p => {
+                groupFrame.add(createBox(p[0], p[1], 0.088, p[2], p[3], 0.10, matRed));
+                groupFrame.add(createCyl(p[4], p[5], 0.082, 0.088, 0.0085, matSilver));
+                groupFrame.add(createCyl(p[4], p[5], 0.02, 0.082, 0.005, matSilver));
+                groupFrame.add(createCyl(p[4], p[5], 0.00, 0.02, 0.025, matBlack));
+            });
+
+            // Сварные швы
+            const weldLines = [
+                [0.155, 0.250, 0.160, 0.185, 0.250, 0.160],
+                [0.370, 0.250, 0.160, 0.400, 0.250, 0.160],
+                [0.155, 0.250, 1.640, 0.185, 0.250, 1.640],
+                [0.185, 0.250, 0.895, 0.185, 0.250, 0.895],
+                [0.185, 0.250, 0.935, 0.185, 0.250, 0.935],
+                [0.185, 0.250, 1.395, 0.185, 0.250, 1.395],
+                [0.185, 0.250, 1.435, 0.185, 0.250, 1.435],
+                [0.155, 0.235, 1.425, 0.185, 0.235, 1.425],
+                [0.240, 0.235, 0.880, 0.300, 0.235, 0.880],
+                [0.240, 0.235, 1.380, 0.300, 0.235, 1.380],
+            ];
+            weldLines.forEach(w => {
+                groupWelds.add(createBox(w[0]-0.004, w[1]-0.004, w[2]-0.004, w[3]+0.004, w[4]+0.004, w[5]+0.004, matOrangeWeld));
+            });
+
+            // ОБОРУДОВАНИЕ:
+            groupEquip.add(createCyl(0.175, 0.440, 0.12, 1.330, 0.125, matBlue1252));
+            groupEquip.add(createBox(0.100, 0.365, 1.330, 0.250, 0.515, 1.480, matBlack));
+            groupEquip.add(createCyl(0.175, 0.440, 1.480, 1.520, 0.045, matBlack));
+
+            groupEquip.add(createCyl(0.130, 0.130, 0.12, 1.100, 0.098, matBlue1054));
+            groupEquip.add(createCyl(0.130, 0.130, 1.100, 1.190, 0.060, matBlack));
+            groupEquip.add(createCyl(0.130, 0.130, 1.190, 1.220, 0.018, matChrome));
+
+            // BB20:
+            groupEquip.add(createCyl(0.300, 0.250, 0.280, 0.816, 0.090, matBigBlue));
+            groupEquip.add(createCyl(0.300, 0.250, 0.816, 0.876, 0.0925, matBlack));
+
+            // BB10:
+            groupEquip.add(createCyl(0.300, 0.250, 1.030, 1.316, 0.090, matBigBlue));
+            groupEquip.add(createCyl(0.300, 0.250, 1.316, 1.376, 0.0925, matBlack));
+
+            // Насос (повернут на 90 град. к колонне 1054, Z=1.444..1.575):
+            groupEquip.add(createBox(0.120, 0.100, 1.444, 0.220, 0.220, 1.545, matChrome));
+            groupEquip.add(createCyl(0.170, 0.160, 1.545, 1.575, 0.035, matBlack));
+            for (let [bx, by] of [[0.135, 0.125], [0.205, 0.125], [0.135, 0.195], [0.205, 0.195]]) {
+                groupEquip.add(createCyl(bx, by, 1.435, 1.455, 0.0035, matSilver));
+            }
+
+            // Блок розеток:
+            groupEquip.add(createBox(0.006, 0.240, 1.550, 0.035, 0.360, 1.620, matSilver));
+            for (let sy of [0.260, 0.300, 0.340]) {
+                groupEquip.add(createBox(0.033, sy - 0.015, 1.570, 0.037, sy + 0.015, 1.600, matBlack));
+            }
+
+            // Трубы
+            groupEquip.add(createBox(0.190, 0.238, 1.305, 0.215, 0.262, 1.335, matChrome));
+            groupEquip.add(createBox(0.130, 0.130, 1.200, 0.278, 0.155, 1.225, matChrome));
+            groupEquip.add(createBox(0.130, 0.130, 1.225, 0.175, 0.440, 1.250, matChrome));
+        }
+
+        // Построение размерных линий КМД вокруг каркаса
+        function build3DDimensions() {
+            // 1. Габаритная ширина 400 мм (спереди снизу)
+            addDimension([0.00, 0.00, 0.10], [0.40, 0.00, 0.10], "400 мм (Ширина)", [0, -0.09, 0]);
+
+            // 2. Габаритная глубина 600 мм (справа снизу)
+            addDimension([0.40, 0.00, 0.10], [0.40, 0.60, 0.10], "600 мм (Глубина)", [0.09, 0, 0]);
+
+            // 3. Габаритная высота 1670 мм (по правой передней стойке)
+            addDimension([0.40, 0.00, 0.00], [0.40, 0.00, 1.67], "H = 1670 мм (Высота)", [0.09, -0.09, 0]);
+
+            // 4. Отметка дна Z = +130 мм
+            addDimension([0.40, 0.00, 0.00], [0.40, 0.00, 0.13], "Z = +130 (Дно)", [0.12, 0, 0]);
+
+            // 5. Просвет под колбой BB20: 150 мм
+            addDimension([0.40, 0.25, 0.13], [0.40, 0.25, 0.28], "150 мм (Просвет)", [0.08, 0, 0]);
+
+            // 6. Крепежный фланец BB20: Z = +880 мм
+            addDimension([0.40, 0.25, 0.00], [0.40, 0.25, 0.88], "Z = +880 (Фланец BB20)", [0.14, 0, 0]);
+
+            // 7. Межколбовый зазор между BB20 и BB10: 150 мм
+            addDimension([0.40, 0.25, 0.88], [0.40, 0.25, 1.03], "150 мм (Зазор)", [0.08, 0, 0]);
+
+            // 8. Крепежный фланец BB10: Z = +1380 мм
+            addDimension([0.40, 0.25, 0.00], [0.40, 0.25, 1.38], "Z = +1380 (Фланец BB10)", [0.14, 0, 0]);
+
+            // 9. Опорная площадка насоса: Z = +1440 мм (над колонной 1054)
+            addDimension([0.17, 0.00, 0.00], [0.17, 0.00, 1.44], "Z = +1440 (Площадка насоса)", [0, -0.08, 0]);
+
+            // 10. Запас сверху над насосом: 65 мм до Z = +1640
+            addDimension([0.17, 0.00, 1.575], [0.17, 0.00, 1.64], "65 мм (Запас)", [0, -0.08, 0]);
+
+            // 11. Фланцы фильтров: 120х120 мм, сетка отверстий 80х80 мм (М8)
+            const spriteFlange = createTextSprite("Фланцы 120х120 (отв. 80х80 М8)", "rgba(230, 168, 23, 0.95)", "#000");
+            spriteFlange.position.set(0.30, 0.94, 0.25);
+            groupDimensions.add(spriteFlange);
+
+            // 12. Зазор до стойки: 22.5 мм (> 2 см)
+            const spriteClear = createTextSprite("Зазор до стойки 22.5 мм (>2 см)", "rgba(33, 38, 45, 0.95)", "#58a6ff");
+            spriteClear.position.set(0.24, 0.78, 0.25);
+            groupDimensions.add(spriteClear);
+        }
+
+        // Построение интерактивной 3D Взрыв-схемы с автоматическим геометрическим расчетом точек сварки
+        function buildExplodedModel() {
+            const matSteelHoriz = new THREE.MeshStandardMaterial({ color: 0xdbe4ee, roughness: 0.35, metalness: 0.65 }); // Светлее (горизонтальные балки)
+            const matSteelVert = new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.40, metalness: 0.65 });  // Темнее (вертикальные стойки)
+            const matPost = new THREE.MeshStandardMaterial({ color: 0x4a90e2, roughness: 0.4, metalness: 0.5 });
+            const matPlate = new THREE.MeshStandardMaterial({ color: 0xe6a817, roughness: 0.3, metalness: 0.7 });
+            const matTray = new THREE.MeshStandardMaterial({ color: 0x10b981, roughness: 0.4, metalness: 0.4 });
+            const matRedWeld = new THREE.MeshStandardMaterial({ color: 0xff0033, emissive: 0xff0022, emissiveIntensity: 0.85, roughness: 0.2 });
+            const matSilver = new THREE.MeshStandardMaterial({ color: 0xe0e0e0, roughness: 0.2, metalness: 0.9 });
+            const matBlack = new THREE.MeshStandardMaterial({ color: 0x212121, roughness: 0.7 });
+
+            function addWeldSpot(x, y, z, r = 0.010) {
+                const geo = new THREE.SphereGeometry(r, 14, 14);
+                const mesh = new THREE.Mesh(geo, matRedWeld);
+                mesh.position.set(x, z, y);
+                groupExploded.add(mesh);
+            }
+
+            function addCallout(x, y, z, text, bg = 'rgba(13, 17, 23, 0.95)', border = '#58a6ff', tc = '#ffffff') {
+                const sp = createTextSprite(text, bg, tc, border);
+                sp.position.set(x, z, y);
+                groupExploded.add(sp);
+            }
+
+            const parts = [];
+            let partIdCounter = 0;
+            function addBoxPart(name, x0, y0, z0, x1, y1, z1, mat, ex, ey, ez, weldable=true) {
+                parts.push({
+                    id: partIdCounter++, name: name, type: 'box',
+                    b: [x0, y0, z0, x1, y1, z1], // bounding box
+                    ex: ex, ey: ey, ez: ez, mat: mat, weldable: weldable
+                });
+            }
+            function addCylPart(name, cx, cy, z0, z1, r, mat, ex, ey, ez, weldable=false) {
+                parts.push({
+                    id: partIdCounter++, name: name, type: 'cyl',
+                    b: [cx-r, cy-r, z0, cx+r, cy+r, z1], cx: cx, cy: cy, r: r,
+                    ex: ex, ey: ey, ez: ez, mat: mat, weldable: weldable
+                });
+            }
+
+            // 1. Верхний пояс (раздвинут)
+            const dZTop = 0.18, dXTop = 0.05, dYTop = 0.05;
+            addBoxPart("TopFront", 0.00, 0.00, 1.64, 0.40, 0.03, 1.67, matSteelHoriz, 0, -dYTop, dZTop);
+            addBoxPart("TopRear", 0.00, 0.57, 1.64, 0.40, 0.60, 1.67, matSteelHoriz, 0, dYTop, dZTop);
+            addBoxPart("TopLeft", 0.00, 0.03, 1.64, 0.03, 0.57, 1.67, matSteelHoriz, -dXTop, 0, dZTop);
+            addBoxPart("TopRight", 0.37, 0.03, 1.64, 0.40, 0.57, 1.67, matSteelHoriz, dXTop, 0, dZTop);
+            addBoxPart("TopCross", 0.03, 0.235, 1.64, 0.37, 0.265, 1.67, matSteelHoriz, 0, 0, dZTop + 0.05);
+
+            // 2. Угловые стойки (сдвиг наружу)
+            const dPost = 0.07;
+            addBoxPart("PostFL", 0.00, 0.00, 0.10, 0.03, 0.03, 1.67, matSteelVert, -dPost, -dPost, 0);
+            addBoxPart("PostFR", 0.37, 0.00, 0.10, 0.40, 0.03, 1.67, matSteelVert, dPost, -dPost, 0);
+            addBoxPart("PostRL", 0.00, 0.57, 0.10, 0.03, 0.60, 1.67, matSteelVert, -dPost, dPost, 0);
+            addBoxPart("PostRR", 0.37, 0.57, 0.10, 0.40, 0.60, 1.67, matSteelVert, dPost, dPost, 0);
+
+            // 3. Нижний пояс (раздвинут)
+            const dZBot = -0.10, dXBot = 0.05, dYBot = 0.05;
+            addBoxPart("BotFront", 0.03, 0.00, 0.10, 0.37, 0.03, 0.13, matSteelHoriz, 0, -dYBot, dZBot);
+            addBoxPart("BotRear", 0.03, 0.57, 0.10, 0.37, 0.60, 0.13, matSteelHoriz, 0, dYBot, dZBot);
+            addBoxPart("BotLeft", 0.00, 0.03, 0.10, 0.03, 0.57, 0.13, matSteelHoriz, -dXBot, 0, dZBot);
+            addBoxPart("BotRight", 0.37, 0.03, 0.10, 0.40, 0.57, 0.13, matSteelHoriz, dXBot, 0, dZBot);
+
+            // 4. Опорные пластины
+            const dZPlate = -0.18;
+            const pts = [[0.00, 0.00, 0.04, 0.04], [0.32, 0.00, 0.36, 0.04], [0.00, 0.52, 0.04, 0.56], [0.32, 0.52, 0.36, 0.56]];
+            pts.forEach((p, i) => {
+                addBoxPart("BasePlate"+i, p[0], p[1], 0.088, p[0]+0.08, p[1]+0.08, 0.10, matPlate, 0, 0, dZPlate);
+                addCylPart("BaseNut"+i, p[2], p[3], 0.082, 0.088, 0.0085, matSilver, 0, 0, dZPlate, false);
+                addCylPart("BaseStud"+i, p[2], p[3], 0.02, 0.082, 0.005, matSilver, 0, 0, dZPlate, false);
+                addCylPart("BaseFoot"+i, p[2], p[3], 0.00, 0.02, 0.025, matBlack, 0, 0, dZPlate, false);
+            });
+
+            // 5. Поддон
+            const dZTray = -0.28;
+            addBoxPart("Tray", 0.00, 0.00, 0.128, 0.40, 0.60, 0.130, matTray, 0, 0, dZTray, false);
+
+            // 6. Сервисная стойка
+            const dYPost = -0.08, dXProf = 0.06;
+            addBoxPart("SvcPost", 0.155, 0.235, 0.13, 0.185, 0.265, 1.64, matSteelVert, 0, dYPost, 0);
+            addBoxPart("SvcProf", 0.155, 0.235, 0.13, 0.400, 0.265, 0.16, matSteelHoriz, dXProf, dYPost, 0);
+
+            // 7. Кронштейны BB20, BB10
+            const dXBrk = 0.16, dZBrk = 0.08;
+            addBoxPart("BB20Plate", 0.24, 0.19, 0.876, 0.36, 0.31, 0.880, matPlate, dXBrk, 0, dZBrk);
+            addBoxPart("BB20Arm", 0.185, 0.235, 0.880, 0.30, 0.265, 0.910, matSteelHoriz, dXBrk, 0, 0);
+            addBoxPart("BB20Gusset", 0.185, 0.247, 0.910, 0.235, 0.253, 0.960, matSteelHoriz, dXBrk, 0, dZBrk);
+
+            addBoxPart("BB10Plate", 0.24, 0.19, 1.376, 0.36, 0.31, 1.380, matPlate, dXBrk, 0, -dZBrk);
+            addBoxPart("BB10Arm", 0.185, 0.235, 1.380, 0.30, 0.265, 1.410, matSteelHoriz, dXBrk, 0, 0);
+            addBoxPart("BB10Gusset", 0.185, 0.247, 1.410, 0.235, 0.253, 1.460, matSteelHoriz, dXBrk, 0, dZBrk);
+
+            // 8. Кронштейн насоса (повернут на 90 град в сторону малой колонны 1054)
+            const dYPump = -0.10, dZPump = 0.08;
+            addBoxPart("PumpArm", 0.155, 0.135, 1.410, 0.185, 0.235, 1.440, matSteelHoriz, 0, dYPump, 0);
+            addBoxPart("PumpPlate", 0.110, 0.085, 1.440, 0.230, 0.235, 1.444, matPlate, 0, dYPump, dZPump);
+
+            // 9. Средние пояса
+            addBoxPart("MidLeft", 0.00, 0.03, 0.85, 0.03, 0.57, 0.88, matSteelHoriz, -0.04, 0, 0);
+            addBoxPart("MidRear", 0.03, 0.57, 0.85, 0.37, 0.60, 0.88, matSteelHoriz, 0, 0.04, 0);
+
+            // Отрисовка геометрии
+            parts.forEach(p => {
+                if (p.type === 'box') {
+                    groupExploded.add(createBox(p.b[0] + p.ex, p.b[1] + p.ey, p.b[2] + p.ez, 
+                                                p.b[3] + p.ex, p.b[4] + p.ey, p.b[5] + p.ez, p.mat));
+                } else if (p.type === 'cyl') {
+                    const cyl = createCyl(p.cx, p.cy, p.b[2], p.b[5], p.r, p.mat);
+                    cyl.position.set(p.cx + p.ex, (p.b[2] + p.b[5])/2 + p.ez, p.cy + p.ey);
+                    groupExploded.add(cyl);
+                }
+            });
+
+            // АЛГОРИТМ: Поиск пересечений Bounding Box (контактных площадок) для расстановки точек сварки
+            const eps = 0.002; // Толерантность 2 мм
+            for(let i = 0; i < parts.length; i++) {
+                for(let j = i + 1; j < parts.length; j++) {
+                    let p1 = parts[i], p2 = parts[j];
+                    if (!p1.weldable || !p2.weldable) continue;
+
+                    let b1 = p1.b, b2 = p2.b;
+                    let ox = Math.max(0, Math.min(b1[3], b2[3]) - Math.max(b1[0], b2[0]));
+                    let oy = Math.max(0, Math.min(b1[4], b2[4]) - Math.max(b1[1], b2[1]));
+                    let oz = Math.max(0, Math.min(b1[5], b2[5]) - Math.max(b1[2], b2[2]));
+
+                    let touchX = (Math.abs(b1[3] - b2[0]) <= eps) || (Math.abs(b1[0] - b2[3]) <= eps);
+                    let touchY = (Math.abs(b1[4] - b2[1]) <= eps) || (Math.abs(b1[1] - b2[4]) <= eps);
+                    let touchZ = (Math.abs(b1[5] - b2[2]) <= eps) || (Math.abs(b1[2] - b2[5]) <= eps);
+
+                    let cx = 0, cy = 0, cz = 0, isWeld = false;
+                    
+                    if (touchX && oy > 0 && oz > 0) {
+                        cx = (Math.abs(b1[3] - b2[0]) <= eps) ? (b1[3]+b2[0])/2 : (b1[0]+b2[3])/2;
+                        cy = (Math.max(b1[1], b2[1]) + Math.min(b1[4], b2[4])) / 2;
+                        cz = (Math.max(b1[2], b2[2]) + Math.min(b1[5], b2[5])) / 2;
+                        isWeld = true;
+                    } else if (touchY && ox > 0 && oz > 0) {
+                        cy = (Math.abs(b1[4] - b2[1]) <= eps) ? (b1[4]+b2[1])/2 : (b1[1]+b2[4])/2;
+                        cx = (Math.max(b1[0], b2[0]) + Math.min(b1[3], b2[3])) / 2;
+                        cz = (Math.max(b1[2], b2[2]) + Math.min(b1[5], b2[5])) / 2;
+                        isWeld = true;
+                    } else if (touchZ && ox > 0 && oy > 0) {
+                        cz = (Math.abs(b1[5] - b2[2]) <= eps) ? (b1[5]+b2[2])/2 : (b1[2]+b2[5])/2;
+                        cx = (Math.max(b1[0], b2[0]) + Math.min(b1[3], b2[3])) / 2;
+                        cy = (Math.max(b1[1], b2[1]) + Math.min(b1[4], b2[4])) / 2;
+                        isWeld = true;
+                    }
+                    else if (ox > eps && oy > eps && oz > eps) {
+                         // Угловые соединения (трубы пересекаются)
+                         cx = (Math.max(b1[0], b2[0]) + Math.min(b1[3], b2[3])) / 2;
+                         cy = (Math.max(b1[1], b2[1]) + Math.min(b1[4], b2[4])) / 2;
+                         cz = (Math.max(b1[2], b2[2]) + Math.min(b1[5], b2[5])) / 2;
+                         
+                         // Притягиваем точку к поверхности
+                         if (Math.min(ox, oy, oz) === ox) cx = (b1[3] > b2[3]) ? b2[3] : b1[3];
+                         else if (Math.min(ox, oy, oz) === oy) cy = (b1[4] > b2[4]) ? b2[4] : b1[4];
+                         else cz = (b1[5] > b2[5]) ? b2[5] : b1[5];
+                         
+                         isWeld = true;
+                    }
+
+                    if (isWeld) {
+                        addWeldSpot(cx + p1.ex, cy + p1.ey, cz + p1.ez);
+                        addWeldSpot(cx + p2.ex, cy + p2.ey, cz + p2.ez);
+                    }
+                }
+            }
+
+            // Выноски
+            addCallout(0.20, -0.05 - dYTop, 1.69 + dZTop, "Поз. 2: 30х30х2 L=400 мм (Верхняя передняя)", "rgba(22, 27, 34, 0.95)", "#388bfd");
+            addCallout(-0.09 - dXTop, 0.30, 1.69 + dZTop, "Поз. 3: 30х30х2 L=540 мм (Верхняя левая)", "rgba(22, 27, 34, 0.95)", "#388bfd");
+            addCallout(0.385 + dPost, -0.06 - dPost, 0.90, "Поз. 1: 30х30х2 L=1540 мм (Стойки)", "rgba(13, 17, 23, 0.95)", "#58a6ff");
+            addCallout(0.20, -0.05 - dYBot, 0.115 + dZBot, "Поз. 5: 30х30х2 L=340 мм (Нижняя передняя)", "rgba(22, 27, 34, 0.95)", "#388bfd");
+            addCallout(0.36, -0.06, 0.05 + dZPlate, "Поз. 8: Пластина 80х80х4 мм", "rgba(230, 168, 23, 0.95)", "#000", "#000");
+            addCallout(0.170, 0.250 + dYPost, 1.15, "Поз. 9: Стойка сервисная 30х30х2", "rgba(74, 144, 226, 0.95)", "#fff", "#fff");
+            addCallout(0.300 + dXBrk, 0.250, 0.920 + dZBrk, "Кронштейн BB20: Консоль + Пластина + Косынка", "rgba(230, 168, 23, 0.95)", "#000", "#000");
+            addCallout(0.300 + dXBrk, 0.250, 1.420 + dZBrk, "Кронштейн BB10: Консоль + Пластина + Косынка", "rgba(230, 168, 23, 0.95)", "#000", "#000");
+            addCallout(0.170, 0.160 + dYPump, 1.460 + dZPump, "Поз. 4: Площадка насоса 150х120 + консоль L=100 (к колонне 1054)", "rgba(245, 158, 11, 0.95)", "#000", "#000");
+        }
+
+        function setMode(mode) {
+            const btnExp = document.getElementById('btn-mode-exp');
+            const btnDim = document.getElementById('btn-mode-dim');
+            const btnFull = document.getElementById('btn-mode-full');
+            const btnFrame = document.getElementById('btn-mode-frame');
+
+            if (btnExp) btnExp.classList.remove('active');
+            if (btnDim) btnDim.classList.remove('active');
+            if (btnFull) btnFull.classList.remove('active');
+            if (btnFrame) btnFrame.classList.remove('active');
+
+            if (mode === 'exp') {
+                if (btnExp) btnExp.classList.add('active');
+                groupExploded.visible = true;
+                groupDimensions.visible = false;
+                groupEquip.visible = false;
+                groupFrame.visible = false;
+                groupWelds.visible = false;
+            } else if (mode === 'dim') {
+                if (btnDim) btnDim.classList.add('active');
+                groupExploded.visible = false;
+                groupDimensions.visible = true;
+                groupEquip.visible = false;
+                groupFrame.visible = true;
+                groupWelds.visible = false;
+            } else if (mode === 'full') {
+                if (btnFull) btnFull.classList.add('active');
+                groupExploded.visible = false;
+                groupDimensions.visible = false;
+                groupEquip.visible = true;
+                groupFrame.visible = true;
+                groupWelds.visible = false;
+            } else if (mode === 'frame') {
+                if (btnFrame) btnFrame.classList.add('active');
+                groupExploded.visible = false;
+                groupDimensions.visible = false;
+                groupEquip.visible = false;
+                groupFrame.visible = true;
+                groupWelds.visible = true;
+            }
+        }
+
+        function setCameraView(view) {
+            controls.autoRotate = false;
+            document.getElementById('chk-auto-rotate').checked = false;
+            if (view === 'iso') {
+                camera.position.set(1.4, 1.3, 2.0);
+                controls.target.set(0.20, 0.85, 0.30);
+            } else if (view === 'front') {
+                camera.position.set(0.20, 0.85, 2.4);
+                controls.target.set(0.20, 0.85, 0.30);
+            } else if (view === 'side') {
+                camera.position.set(2.4, 0.85, 0.30);
+                controls.target.set(0.20, 0.85, 0.30);
+            } else if (view === 'top') {
+                camera.position.set(0.20, 2.5, 0.30);
+                controls.target.set(0.20, 0.85, 0.30);
+            }
+            controls.update();
+            toggleMenu();
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+    </script>
+</body>
+</html>

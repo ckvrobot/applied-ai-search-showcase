@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Applied AI Search & Engineering Showcase | Витрина ИИ-Агентов</title>
+    <style>
+        :root {
+            --bg: #0d1117;
+            --card-bg: #161b22;
+            --border: #30363d;
+            --text: #c9d1d9;
+            --heading: #f0f6fc;
+            --accent: #58a6ff;
+            --accent-green: #3fb950;
+            --accent-purple: #bc8cff;
+            --accent-orange: #f0883e;
+            --tag-bg: #21262d;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg); color: var(--text); line-height: 1.6; padding: 24px 16px;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        
+        /* Хедер */
+        header { text-align: center; margin-bottom: 36px; padding: 20px 0; border-bottom: 1px solid var(--border); }
+        .badge-top {
+            display: inline-block; background: rgba(88, 166, 255, 0.15); color: var(--accent);
+            padding: 4px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; margin-bottom: 12px;
+            border: 1px solid rgba(88, 166, 255, 0.3);
+        }
+        h1 { color: var(--heading); font-size: 34px; font-weight: 800; margin-bottom: 10px; letter-spacing: -0.5px; }
+        .subtitle { color: #8b949e; font-size: 17px; max-width: 780px; margin: 0 auto 20px auto; }
+        
+        .header-actions { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin-top: 14px; }
+        .btn-link {
+            display: inline-flex; align-items: center; gap: 8px; background: #21262d; color: var(--heading);
+            padding: 10px 18px; border-radius: 8px; font-size: 14px; font-weight: 600; text-decoration: none;
+            border: 1px solid var(--border); transition: all 0.2s;
+        }
+        .btn-link:hover { background: #30363d; border-color: var(--accent); color: #fff; }
+        .btn-link.primary { background: #238636; border-color: #2ea043; }
+        .btn-link.primary:hover { background: #2ea043; }
+
+        /* Статистика */
+        .stats-bar {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px; margin-bottom: 32px;
+        }
+        .stat-item {
+            background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px;
+            padding: 14px 18px; text-align: center;
+        }
+        .stat-num { font-size: 22px; font-weight: 700; color: var(--heading); }
+        .stat-lbl { font-size: 12px; color: #8b949e; margin-top: 2px; }
+
+        /* Поиск и фильтры */
+        .controls-bar {
+            display: flex; flex-direction: column; gap: 16px; margin-bottom: 28px;
+            background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 18px;
+        }
+        .search-box input {
+            width: 100%; background: #0d1117; border: 1px solid var(--border); border-radius: 6px;
+            padding: 12px 16px; color: #fff; font-size: 14px; outline: none; transition: border-color 0.2s;
+        }
+        .search-box input:focus { border-color: var(--accent); }
+        .filter-pills { display: flex; gap: 8px; flex-wrap: wrap; }
+        .pill {
+            background: var(--tag-bg); color: #8b949e; border: 1px solid var(--border);
+            padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 500; cursor: pointer;
+            transition: all 0.2s; user-select: none;
+        }
+        .pill:hover { color: #fff; border-color: #8b949e; }
+        .pill.active { background: var(--accent); color: #0d1117; border-color: var(--accent); font-weight: 700; }
+
+        /* Сетка проектов */
+        .projects-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 20px;
+        }
+        .project-card {
+            background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px;
+            padding: 22px; display: flex; flex-direction: column; justify-content: space-between;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        .project-card:hover { transform: translateY(-3px); border-color: #58a6ff; }
+        .card-header { margin-bottom: 12px; }
+        .card-category { font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+        .cat-eng { color: var(--accent); }
+        .cat-textile { color: var(--accent-purple); }
+        .cat-3d { color: var(--accent-orange); }
+        .cat-hr { color: var(--accent-green); }
+        
+        .card-title { font-size: 18px; color: var(--heading); font-weight: 700; margin-bottom: 8px; line-height: 1.35; }
+        .card-desc { font-size: 13.5px; color: #8b949e; margin-bottom: 16px; line-height: 1.5; flex-grow: 1; }
+        
+        .features-list { list-style: none; margin-bottom: 18px; }
+        .features-list li {
+            font-size: 12.5px; color: #c9d1d9; margin-bottom: 5px; display: flex; align-items: flex-start; gap: 6px;
+        }
+        .features-list li::before { content: "✓"; color: var(--accent-green); font-weight: bold; }
+        
+        .card-footer {
+            display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border);
+            padding-top: 14px; margin-top: auto;
+        }
+        .action-link {
+            background: #21262d; color: var(--heading); border: 1px solid var(--border);
+            padding: 8px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; text-decoration: none;
+            display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s;
+        }
+        .action-link:hover { background: #30363d; border-color: var(--accent); color: #fff; }
+        .action-link.primary { background: rgba(35, 134, 54, 0.2); color: #3fb950; border-color: rgba(63, 185, 80, 0.4); }
+        .action-link.primary:hover { background: #238636; color: #fff; }
+
+        footer { text-align: center; margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--border); color: #8b949e; font-size: 13px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="badge-top">🚀 Applied AI Agents & Engineering Hub</div>
+            <h1>Витрина Прикладных ИИ-Агентов</h1>
+            <div class="subtitle">Интерактивные автономные каталоги, 3D САПР-модели, расчеты сопромата (МКЭ) и кадровый гео-поиск, созданные автономными агентами в среде IDE.</div>
+            <div class="header-actions">
+                <a href="methodology.html" class="btn-link primary">📖 Читать методику: IDE как операционный центр</a>
+                <a href="https://github.com/ckvrobot/applied-ai-search-showcase" target="_blank" class="btn-link">⭐ Исходный код на GitHub</a>
+            </div>
+        </header>
+
+        <div class="stats-bar">
+            <div class="stat-item">
+                <div class="stat-num">50+</div>
+                <div class="stat-lbl">Решенных проектов</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-num">100 баллов</div>
+                <div class="stat-lbl">Многофакторный скоринг</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-num">350 кг/м²</div>
+                <div class="stat-lbl">МКЭ-расчет нагрузок навеса</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-num">до 500 000 ₽</div>
+                <div class="stat-lbl">Экономия на закупках и найме</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-num">0 капч</div>
+                <div class="stat-lbl">Обход через Android UIAutomator</div>
+            </div>
+        </div>
+
+        <div class="controls-bar">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Поиск по проектам (например: шторы, гидроаккумулятор, 3D, навес, монитор)..." oninput="filterProjects()">
+            </div>
+            <div class="filter-pills">
+                <div class="pill active" onclick="setCategory('all', this)">Все направления</div>
+                <div class="pill" onclick="setCategory('eng', this)">Инженерия и Сантехника</div>
+                <div class="pill" onclick="setCategory('textile', this)">Текстиль и Колористика</div>
+                <div class="pill" onclick="setCategory('3d', this)">3D САПР & Сопромат (МКЭ)</div>
+                <div class="pill" onclick="setCategory('hr', this)">Кадры и Авито-CRM</div>
+            </div>
+        </div>
+
+        <div class="projects-grid" id="projectsGrid">
+            
+            <!-- 1. Шторы и Тюль -->
+            <div class="project-card" data-cat="textile" data-tags="шторы тюль текстиль цвет hsv duo раскрой ozon">
+                <div class="card-header">
+                    <div class="card-category cat-textile">Текстиль & Колористика</div>
+                    <div class="card-title">Подбор штор и гармоничных компаньонов (Duo Matcher)</div>
+                </div>
+                <div class="card-desc">Интерактивный двухэкранный каталог со Split-Screen скроллом для одновременного подбора плотной портьеры и тюля. Пиксельный HSV-анализ оттенков и цеховые эвристики раскроя ткани.</div>
+                <ul class="features-list">
+                    <li>Duo Matcher: примерка пары в шапку со сквозной сметой на объект</li>
+                    <li>HSV пиксельное зрение: фильтрация фона и группировка оттенков</li>
+                    <li>Раскрой 5.0м на два полотна по 2.50м (экономия бюджета в 2 раза)</li>
+                </ul>
+                <div class="card-footer">
+                    <span style="font-size: 12px; color: #8b949e;">410 фото • Single-File</span>
+                    <a href="projects/10_curtains/index.html" target="_blank" class="action-link primary">Открыть каталог ↗</a>
+                </div>
+            </div>
+
+            <!-- 2. Гидроаккумуляторы -->
+            <div class="project-card" data-cat="eng" data-tags="гидроаккумулятор бак водоснабжение нержавейка мембрана давление насос">
+                <div class="card-header">
+                    <div class="card-category cat-eng">Инженерия & Сантехника</div>
+                    <div class="card-title">Подбор гидроаккумуляторов для водоснабжения дома</div>
+                </div>
+                <div class="card-desc">Поиск надежных расширительных баков на 80-100 литров. Жесткий отсев безнапорных баков, дисквалификация оцинкованных фланцев, проверка рабочего давления 10 бар и пищевых мембран EPDM.</div>
+                <ul class="features-list">
+                    <li>Senior AI Quality Auditor: проверка скрытых дефектов и брака</li>
+                    <li>100-балльная шкала: долговечность, металл фланца, репутация</li>
+                    <li>Двухуровневый захват HD-фото: общий вид + шильдик с характеристиками</li>
+                </ul>
+                <div class="card-footer">
+                    <span style="font-size: 12px; color: #8b949e;">Формульный скоринг</span>
+                    <a href="projects/21_hydroaccumulators/index.html" target="_blank" class="action-link primary">Открыть каталог ↗</a>
+                </div>
+            </div>
+
+            <!-- 3. Навес 3D -->
+            <div class="project-card" data-cat="3d" data-tags="навес 3d сопромат мкэ расчет снег ферма труба pynite">
+                <div class="card-header">
+                    <div class="card-category cat-3d">3D САПР & Сопромат (МКЭ)</div>
+                    <div class="card-title">Пространственный 3D-каркас навеса и расчет нагрузок</div>
+                </div>
+                <div class="card-desc">Интерактивная 3D-модель арочного навеса на круглых и профильных столбах. Расчет пространственной фермы методом конечных элементов (Pynite) на нормативную снеговую нагрузку 350 кг/м².</div>
+                <ul class="features-list">
+                    <li>3D WebGL просмотрщик: вращение 360°, зум, слои ферм и прогонов</li>
+                    <li>Расчет запаса прочности по пределу текучести стали Ст3сп (245 МПа)</li>
+                    <li>Арбитраж готовых навесов с Авито по реальной несущей способности</li>
+                </ul>
+                <div class="card-footer">
+                    <span style="font-size: 12px; color: #8b949e;">Three.js • WebGL</span>
+                    <a href="projects/naves_canopy_3d/index.html" target="_blank" class="action-link primary">Вращать в 3D ↗</a>
+                </div>
+            </div>
+
+            <!-- 4. Clean Box 3D -->
+            <div class="project-card" data-cat="3d" data-tags="clean box водоочистка шкаф 3d кмд сварка чертежи фильтр">
+                <div class="card-header">
+                    <div class="card-category cat-3d">3D САПР & Производство</div>
+                    <div class="card-title">Clean Box: Мобильный шкаф водоочистки на колесах</div>
+                </div>
+                <div class="card-desc">Проектирование несущего стального каркаса 400х600х1700 мм. Контроль сервисных зазоров для замены колб Big Blue 20" (150 мм хода вниз), генерация карт раскроя и взрыв-схемы сборки.</div>
+                <ul class="features-list">
+                    <li>Интерактивная взрыв-схема: показ деталей распила и сварных швов</li>
+                    <li>Контроль коллизий и светового сервисного проема 540 мм</li>
+                    <li>Полная спецификация КМД: погонаж трубы 30х30, косынки, поддон</li>
+                </ul>
+                <div class="card-footer">
+                    <span style="font-size: 12px; color: #8b949e;">Взрыв-схема • КМД</span>
+                    <a href="projects/clean_box_3d/index.html" target="_blank" class="action-link primary">Вращать в 3D ↗</a>
+                </div>
+            </div>
+
+            <!-- 5. Мониторы -->
+            <div class="project-card" data-cat="eng" data-tags="мониторы экран ips vesa шим работа 2k 4k displayport">
+                <div class="card-header">
+                    <div class="card-category cat-eng">Инженерия & Электроника</div>
+                    <div class="card-title">Рабочие мониторы для длительного программирования</div>
+                </div>
+                <div class="card-desc">Подбор мониторов с диагональю 27"-32". Жесткие требования: матовый антиблик, отсутствие ШИМ-мерцания подсветки (Flicker-Free), IPS-матрица 2K/4K и стандартное крепление VESA 100x100.</div>
+                <ul class="features-list">
+                    <li>Отсечение дешевых мерцающих VA/TN матриц с узкими углами</li>
+                    <li>Sanity Clamping рейтингов: защита от ловушек чисел диагонали в оценках</li>
+                    <li>Синхронный компаратор портов (Type-C PD, DP, HDMI)</li>
+                </ul>
+                <div class="card-footer">
+                    <span style="font-size: 12px; color: #8b949e;">Single-File HTML</span>
+                    <a href="projects/12_monitors/index.html" target="_blank" class="action-link primary">Открыть каталог ↗</a>
+                </div>
+            </div>
+
+            <!-- 6. Авито CRM и наем строителей -->
+            <div class="project-card" data-cat="hr" data-tags="авито гараж строители наем мастера резюме uiautomator android">
+                <div class="card-header">
+                    <div class="card-category cat-hr">Кадры & Авито-CRM</div>
+                    <div class="card-title">Поиск строителей гаража и мобильная CRM-коммуникация</div>
+                </div>
+                <div class="card-desc">Кейс отсева посреднических бригад (360-750 тыс. руб.) и переход в раздел резюме к мастерам-одиночкам (100-150 тыс. руб.). Автоматизация диалогов через Android UIAutomator2 без капч.</div>
+                <ul class="features-list">
+                    <li>Фильтрация по радиусу до 50 км, опыту стропил и гражданству</li>
+                    <li>Автоматическая отправка 3D-модели и стандартизированного ТЗ</li>
+                    <li>CRM-протокол фиксации статусов ответов и причин отсева</li>
+                </ul>
+                <div class="card-footer">
+                    <span style="font-size: 12px; color: #8b949e;">Кейс-стади & CRM</span>
+                    <a href="projects/avito_contractors/index.html" target="_blank" class="action-link primary">Смотреть кейс ↗</a>
+                </div>
+            </div>
+
+            <!-- 7. Воздушные компрессоры -->
+            <div class="project-card" data-cat="eng" data-tags="компрессор воздух ресивер инструмент пневматика гараж мастерская">
+                <div class="card-header">
+                    <div class="card-category cat-eng">Инженерия & Оборудование</div>
+                    <div class="card-title">Воздушные компрессоры для гаражной мастерской</div>
+                </div>
+                <div class="card-desc">Анализ ременных и коаксиальных компрессоров. Оценка реальной производительности на выходе (л/мин), объема ресивера, чугунных гильз цилиндров и ремонтопригодности клапанных блоков.</div>
+                <ul class="features-list">
+                    <li>Отсев маркетинговых завышений литража по входу</li>
+                    <li>Проверка наличия тепловой защиты и стартового разгрузочного клапана</li>
+                    <li>Двухэкранное сопоставление габаритов и цен</li>
+                </ul>
+                <div class="card-footer">
+                    <span style="font-size: 12px; color: #8b949e;">Split-Screen</span>
+                    <a href="projects/23_air_compressor/index.html" target="_blank" class="action-link primary">Открыть каталог ↗</a>
+                </div>
+            </div>
+
+            <!-- 8. Заднее колесо 26" -->
+            <div class="project-card" data-cat="eng" data-tags="велосипед колесо 26 втулка обод промподшипники кассета">
+                <div class="card-header">
+                    <div class="card-category cat-eng">Инженерия & Механика</div>
+                    <div class="card-title">Велосипедное заднее колесо 26" на промподшипниках</div>
+                </div>
+                <div class="card-desc">Подбор надежного колеса взамен изношенного. Проверка типа втулки (промышленные закрытые подшипники vs насыпные шарики), посадки кассеты (не трещотка!) и двойного пистонированного обода.</div>
+                <ul class="features-list">
+                    <li>ИИ-фильтрация несовместимых стандартов (диск vs v-brake, boost vs 135мм)</li>
+                    <li>Аудит комплектности (наличие эксцентрика и ободной ленты)</li>
+                    <li>Оценка толщины спиц и устойчивости к восьмеркам</li>
+                </ul>
+                <div class="card-footer">
+                    <span style="font-size: 12px; color: #8b949e;">Single-File HTML</span>
+                    <a href="projects/27_bike_wheel/index.html" target="_blank" class="action-link primary">Открыть каталог ↗</a>
+                </div>
+            </div>
+
+            <!-- 9. Аварийный дренажный трап -->
+            <div class="project-card" data-cat="eng" data-tags="трап канализация слив сантехника сухой затвор нержавейка">
+                <div class="card-header">
+                    <div class="card-category cat-eng">Инженерия & Сантехника</div>
+                    <div class="card-title">Аварийный дренажный трап с сухим затвором</div>
+                </div>
+                <div class="card-desc">Поиск напольного канализационного трапа для бойлерной и постирочной. Защита от пересыхания гидрозатвора (сухой поплавковый/мембранный клапан) и нержавеющая решетка.</div>
+                <ul class="features-list">
+                    <li>Анализ пропускной способности (л/мин) при залповом сбросе</li>
+                    <li>Проверка монтажной высоты и диаметра выпуска (50 мм vs 110 мм)</li>
+                    <li>Сравнение цен маркетплейсов с защитой от скидочных ловушек</li>
+                </ul>
+                <div class="card-footer">
+                    <span style="font-size: 12px; color: #8b949e;">Single-File HTML</span>
+                    <a href="projects/31_drain_trap/index.html" target="_blank" class="action-link primary">Открыть каталог ↗</a>
+                </div>
+            </div>
+
+        </div>
+
+        <footer>
+            Applied AI Search & Engineering Framework • Разработано в среде IDE с ИИ-агентами • 2026
+        </footer>
+    </div>
+
+    <script>
+        let currentCategory = 'all';
+
+        function setCategory(cat, element) {
+            currentCategory = cat;
+            document.querySelectorAll('.filter-pills .pill').forEach(p => p.classList.remove('active'));
+            element.classList.add('active');
+            filterProjects();
+        }
+
+        function filterProjects() {
+            const query = document.getElementById('searchInput').value.toLowerCase().trim();
+            const cards = document.querySelectorAll('.project-card');
+
+            cards.forEach(card => {
+                const cat = card.dataset.cat;
+                const tags = card.dataset.tags || '';
+                const text = card.innerText.toLowerCase();
+
+                const matchesCat = (currentCategory === 'all' || cat === currentCategory);
+                const matchesQuery = !query || text.includes(query) || tags.includes(query);
+
+                if (matchesCat && matchesQuery) {
+                    card.style.display = 'flex';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+    </script>
+</body>
+</html>

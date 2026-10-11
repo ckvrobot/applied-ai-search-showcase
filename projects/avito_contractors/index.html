@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Avito CRM & Наем Исполнителей | Applied AI Showcase</title>
+    <style>
+        :root {
+            --bg: #0d1117;
+            --card-bg: #161b22;
+            --border: #30363d;
+            --text: #c9d1d9;
+            --heading: #f0f6fc;
+            --accent: #58a6ff;
+            --green: #238636;
+            --yellow: #d29922;
+            --red: #f85149;
+            --purple: #bc8cff;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            padding: 24px;
+        }
+        .container { max-width: 1100px; margin: 0 auto; }
+        .back-link {
+            display: inline-flex; align-items: center; gap: 6px;
+            color: var(--accent); text-decoration: none; font-size: 14px;
+            font-weight: 600; margin-bottom: 20px;
+        }
+        .back-link:hover { text-decoration: underline; }
+        header { margin-bottom: 32px; border-bottom: 1px solid var(--border); padding-bottom: 20px; }
+        h1 { color: var(--heading); font-size: 28px; margin-bottom: 8px; }
+        .subtitle { color: #8b949e; font-size: 16px; }
+        .stats-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px; margin-bottom: 32px;
+        }
+        .stat-card {
+            background: var(--card-bg); border: 1px solid var(--border);
+            border-radius: 8px; padding: 18px;
+        }
+        .stat-val { font-size: 24px; font-weight: 700; color: var(--heading); }
+        .stat-val.good { color: #3fb950; }
+        .stat-val.warn { color: var(--red); }
+        .stat-label { font-size: 13px; color: #8b949e; margin-top: 4px; }
+        h2 { color: var(--heading); font-size: 20px; margin: 28px 0 16px 0; border-left: 4px solid var(--accent); padding-left: 10px; }
+        .card {
+            background: var(--card-bg); border: 1px solid var(--border);
+            border-radius: 8px; padding: 20px; margin-bottom: 20px;
+        }
+        table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 14px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border); }
+        th { color: #8b949e; font-weight: 600; background: rgba(255,255,255,0.02); }
+        tr:hover { background: rgba(255,255,255,0.02); }
+        .badge {
+            display: inline-block; padding: 3px 8px; border-radius: 12px;
+            font-size: 11px; font-weight: 600;
+        }
+        .badge-green { background: rgba(35, 134, 54, 0.2); color: #3fb950; border: 1px solid rgba(63, 185, 80, 0.4); }
+        .badge-red { background: rgba(248, 81, 73, 0.2); color: #f85149; border: 1px solid rgba(248, 81, 73, 0.4); }
+        .badge-yellow { background: rgba(210, 153, 34, 0.2); color: #d29922; border: 1px solid rgba(210, 153, 34, 0.4); }
+        .badge-purple { background: rgba(188, 140, 255, 0.2); color: #bc8cff; border: 1px solid rgba(188, 140, 255, 0.4); }
+        code { background: #21262d; padding: 2px 6px; border-radius: 4px; font-size: 13px; color: #f0883e; }
+        ul { padding-left: 20px; }
+        li { margin-bottom: 8px; }
+        a { color: var(--accent); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="../../index.html" class="back-link">← Вернуться на витрину проектов</a>
+        <header>
+            <h1>Авито-Автоматизация: Гео-поиск мастеров и мобильный CRM-коммуникатор</h1>
+            <div class="subtitle">Кейс: Строительство каркасного гаража 5х7 м в Люберцах (МО) | Обход антифрода через Android UIAutomator2</div>
+        </header>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-val warn">360 000 — 750 000 руб.</div>
+                <div class="stat-label">Первичные предложения бригад и фирм-посредников</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-val good">100 000 — 150 000 руб.</div>
+                <div class="stat-label">Целевой сдельный бюджет с мастером-одиночкой</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-val">Экономия до 500 000 руб.</div>
+                <div class="stat-label">Финансовый эффект точечного отбора по резюме</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-val">0 капч и 0 банов</div>
+                <div class="stat-label">Эффект работы через официальное приложение Android</div>
+            </div>
+        </div>
+
+        <h2>1. Проблема рынка услуг и стратегия ИИ-агента</h2>
+        <div class="card">
+            <p><strong>Рыночный тупик:</strong> Поиск строителей в общем разделе «Услуги» на Авито выдает прорабов, диспетчеров и строительные компании. За каркасный гараж 5х7 м (с готовым брусом и электричеством на участке) они выставляли сметы от 360 до 750 тыс. руб., закладывая 300% наценку на менеджмент.</p>
+            <br>
+            <p><strong>Стратегия ИИ:</strong> Агент переключился на скрытый резерв — <strong>раздел «Резюме» соискателей</strong> в радиусе до 50 км от объекта. Поиск плотников-универсалов, работающих на себя своими руками.</p>
+        </div>
+
+        <h2>2. Журнал отсева коммерческих предложений (Услуги vs Резюме)</h2>
+        <div class="card">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Исполнитель / Кандидат</th>
+                        <th>Категория</th>
+                        <th>Заявленная цена / Ставка</th>
+                        <th>Статус в CRM</th>
+                        <th>Причина решения</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Бригада «Строим» (Иваново)</strong></td>
+                        <td>Бригада услуг</td>
+                        <td>700 000 руб.</td>
+                        <td><span class="badge badge-red">Отказ</span></td>
+                        <td>Завышение сметы в 5 раз, отказ варить металлокаркас</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Артём (Строительство)</strong></td>
+                        <td>Бригада услуг</td>
+                        <td>700 000 — 750 000 руб.</td>
+                        <td><span class="badge badge-red">Отказ</span></td>
+                        <td>Неадекватная наценка на подсобные операции</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Анатолий</strong></td>
+                        <td>Услуги</td>
+                        <td>450 000 руб.</td>
+                        <td><span class="badge badge-red">Отказ</span></td>
+                        <td>Превышение бюджета заказчика в 3 раза</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Егор Строитель</strong></td>
+                        <td>Частный мастер</td>
+                        <td>360 000 — 420 000 руб.</td>
+                        <td><span class="badge badge-yellow">Пауза</span></td>
+                        <td>Высокая ставка, диалог отложен</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Столяр-плотник, Люберцы (36 лет)</strong></td>
+                        <td>Резюме (РФ)</td>
+                        <td>160 000 руб. (готов к сделке)</td>
+                        <td><span class="badge badge-green">Приоритет</span></td>
+                        <td>10 лет стажа, живет рядом, работает своими руками</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Плотник на каркасные дома (26 лет)</strong></td>
+                        <td>Резюме (РФ)</td>
+                        <td>Сдельно / по договоренности</td>
+                        <td><span class="badge badge-green">В диалоге</span></td>
+                        <td>Статус «Могу выйти завтра», опыт сборки каркасов</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Кровельщик-плотник (48 лет)</strong></td>
+                        <td>Резюме (СНГ, патент)</td>
+                        <td>Договорная (~120 тыс.)</td>
+                        <td><span class="badge badge-purple">Резерв</span></td>
+                        <td>Есть официальные документы, опыт стропил и металла</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h2>3. Инженерные уроки мобильной автоматизации (Android UIAutomator2)</h2>
+        <div class="card">
+            <ul>
+                <li><strong>Ловушка кнопки отправки (<code>submit_button_animator</code>):</strong> в приложении Авито поле ввода и кнопка «Отправить» меняют состояние только при наличии символов. Обычный вызов <code>press_back()</code> закрывал экран с сообщением в «Черновиках». Разработан протокол ожидания анимации 1.0 сек перед кликом.</li>
+                <li><strong>Отправка прямо из ленты:</strong> в карточках услуг контейнера <code>advert_rich_root</code> есть прямая кнопка «Написать». Нажатие прямо из ленты сократило время на 1 контакт с 4.5 до 2.2 секунд.</li>
+                <li><strong>100% обход веб-капч:</strong> ни одной блокировки или запроса номера, так как запросы шли из официального мобильного клиента реального смартфона.</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>
