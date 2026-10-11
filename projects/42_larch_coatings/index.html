@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Интерактивная галерея: Брашированная лиственница + Балки «Орех»</title>
+  <style>
+    :root {
+      --bg: #101216;
+      --card-bg: #1a1e24;
+      --text: #f0f6fc;
+      --text-muted: #8b949e;
+      --accent: #d4a373;
+      --accent-hover: #faedcd;
+      --border: #30363d;
+      --highlight: #e76f51;
+      --success: #52b788;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 24px 20px 80px;
+    }
+    .container {
+      max-width: 1440px;
+      margin: 0 auto;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 32px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 24px;
+    }
+    header h1 {
+      font-size: 28px;
+      color: var(--accent);
+      margin-bottom: 8px;
+      letter-spacing: -0.5px;
+    }
+    header p {
+      color: var(--text-muted);
+      font-size: 15px;
+      max-width: 820px;
+      margin: 0 auto;
+    }
+    .specs-badge {
+      display: inline-flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 14px;
+      margin-top: 16px;
+      background: #161b22;
+      padding: 10px 20px;
+      border-radius: 30px;
+      font-size: 13px;
+      color: #cbd5e1;
+      border: 1px solid var(--border);
+    }
+    .specs-badge strong { color: var(--accent); }
+
+    .help-banner {
+      background: rgba(212, 163, 115, 0.12);
+      border: 1px solid rgba(212, 163, 115, 0.3);
+      border-radius: 10px;
+      padding: 12px 18px;
+      margin-bottom: 28px;
+      font-size: 14px;
+      color: #faedcd;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .help-banner span { display: inline-flex; align-items: center; gap: 8px; }
+
+    /* Сетка карточек */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 24px;
+      margin-bottom: 40px;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.45);
+      transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+      cursor: pointer;
+      position: relative;
+    }
+    .card:hover {
+      transform: translateY(-5px);
+      border-color: var(--accent);
+      box-shadow: 0 14px 35px rgba(212, 163, 115, 0.2);
+    }
+    .card.badge-recommended {
+      border: 1.5px solid var(--success);
+    }
+    .img-wrap {
+      width: 100%;
+      height: 250px;
+      position: relative;
+      background: #0d1117;
+      overflow: hidden;
+    }
+    .img-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.35s ease;
+    }
+    .card:hover .img-wrap img {
+      transform: scale(1.04);
+    }
+    .zoom-hint {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(4px);
+      color: #fff;
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      opacity: 0.85;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .card:hover .zoom-hint {
+      opacity: 1;
+      background: rgba(212, 163, 115, 0.9);
+      color: #000;
+      font-weight: 600;
+    }
+    .tag {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(6px);
+      color: #fff;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    .tag.rec {
+      background: rgba(46, 125, 50, 0.85);
+      border-color: #81c784;
+    }
+    .card-body {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      flex-grow: 1;
+    }
+    .card-title {
+      font-size: 19px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+    .card-subtitle {
+      color: var(--accent);
+      font-size: 12.5px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+      font-weight: 600;
+    }
+    .desc {
+      color: #cbd5e1;
+      font-size: 13.5px;
+      margin-bottom: 16px;
+      flex-grow: 1;
+    }
+    .tech-list {
+      background: #13171d;
+      border-radius: 8px;
+      padding: 12px 14px;
+      list-style: none;
+      font-size: 12.5px;
+      border: 1px solid #282e36;
+      margin-bottom: 14px;
+    }
+    .tech-list li {
+      margin-bottom: 5px;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .tech-list li:last-child { margin-bottom: 0; }
+    .tech-list span:first-child { color: var(--text-muted); }
+    .tech-list span:last-child { color: #f0f6fc; font-weight: 500; text-align: right; }
+
+    .open-btn {
+      width: 100%;
+      background: #232830;
+      color: #e6edf3;
+      border: 1px solid var(--border);
+      padding: 9px;
+      border-radius: 7px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .card:hover .open-btn {
+      background: var(--accent);
+      color: #1a1e24;
+      border-color: var(--accent);
+    }
+
+    /* Таблица сводная */
+    .summary-box {
+      background: #161a20;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px;
+      margin-top: 24px;
+    }
+    .summary-box h3 {
+      color: var(--accent);
+      font-size: 20px;
+      margin-bottom: 8px;
+    }
+    .summary-box p {
+      color: var(--text-muted);
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+    .calc-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13.5px;
+    }
+    .calc-table th, .calc-table td {
+      padding: 11px 14px;
+      border-bottom: 1px solid #2d333b;
+      text-align: left;
+    }
+    .calc-table th {
+      color: var(--text-muted);
+      font-weight: 600;
+      background: #111418;
+    }
+    .calc-table tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    /* Lightbox Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(8, 10, 12, 0.94);
+      backdrop-filter: blur(8px);
+      z-index: 9999;
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      opacity: 0;
+      transition: opacity 0.25s ease;
+    }
+    .modal-overlay.active {
+      display: flex;
+      opacity: 1;
+    }
+    .modal-header {
+      width: 100%;
+      max-width: 1400px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      color: #fff;
+    }
+    .modal-counter {
+      font-size: 14px;
+      color: var(--accent);
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+    .modal-title-group h2 {
+      font-size: 20px;
+      color: #fff;
+    }
+    .modal-title-group p {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    .close-btn {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: #fff;
+      font-size: 26px;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+      transition: all 0.2s ease;
+    }
+    .close-btn:hover {
+      background: #e76f51;
+      border-color: #e76f51;
+    }
+
+    .modal-body {
+      position: relative;
+      width: 100%;
+      max-width: 1400px;
+      height: 75vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-img-container {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    .modal-img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      border-radius: 8px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+      border: 1px solid #30363d;
+      transition: opacity 0.2s ease;
+    }
+
+    /* Кнопки листания */
+    .nav-btn {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: rgba(26, 30, 36, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #fff;
+      font-size: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      z-index: 10;
+      user-select: none;
+    }
+    .nav-btn:hover {
+      background: var(--accent);
+      color: #101216;
+      border-color: var(--accent);
+      transform: translateY(-50%) scale(1.08);
+    }
+    .nav-btn.prev { left: 16px; }
+    .nav-btn.next { right: 16px; }
+
+    /* Описание под картинкой в модалке */
+    .modal-footer {
+      width: 100%;
+      max-width: 1400px;
+      margin-top: 14px;
+      background: rgba(22, 27, 34, 0.9);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 20px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+    .modal-footer-desc {
+      font-size: 14px;
+      color: #cbd5e1;
+      max-width: 850px;
+    }
+    .modal-footer-tech {
+      font-size: 13px;
+      color: var(--accent);
+      background: #101216;
+      padding: 6px 14px;
+      border-radius: 6px;
+      border: 1px solid #282e36;
+    }
+
+    @media (max-width: 768px) {
+      .modal-body { height: 60vh; }
+      .nav-btn { width: 42px; height: 42px; font-size: 18px; }
+      .nav-btn.prev { left: 4px; }
+      .nav-btn.next { right: 4px; }
+      header h1 { font-size: 22px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Каталог вариантов: Брашированная лиственница + Балки «Орех»</h1>
+      <p>Интерьерные решения для потолка/стен (30 м²). Защитные покрытия маслом с высоким содержанием карнаубского воска.</p>
+      <div class="specs-badge">
+        <div><strong>Площадь:</strong> 30 м²</div>
+        <div><strong>Балки:</strong> Сосна (колер Темный Орех)</div>
+        <div><strong>Потолок:</strong> Лиственница (брашированная вагонка)</div>
+        <div><strong>Финиш:</strong> Карнаубский воск / Шелковистый блеск</div>
+      </div>
+    </header>
+
+    <div class="help-banner">
+      <span>🔍 <strong>Совет:</strong> Кликните на любую карточку или картинку, чтобы развернуть во весь экран и переключаться стрелками ← / →.</span>
+      <span style="font-size: 12px; color: var(--text-muted);">Клавиши: [Esc] — закрыть, [← / →] — листать</span>
+    </div>
+
+    <div class="grid" id="galleryGrid">
+      <!-- Динамически заполняется или рендерится JS -->
+    </div>
+
+    <div class="summary-box">
+      <h3>Сводный расчет и технологическая карта (на 30 м²)</h3>
+      <p>Сравнение расхода, состава и ориентировочных цен в Москве на октябрь 2026 года:</p>
+      <table class="calc-table">
+        <thead>
+          <tr>
+            <th>Вариант покрытия</th>
+            <th>1-й слой (Грунт / Тон)</th>
+            <th>2-й слой (Финишный блеск)</th>
+            <th>Расход</th>
+            <th>Бюджет (Москва)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>1. Soft Amber (Мягкий янтарь)</strong> ⭐</td>
+            <td>Масло-воск тонированное (30% янтарь / мёд) 1.5 л</td>
+            <td>Твердый воск с карнаубой Holzwachs 1.0 л</td>
+            <td>~2.5 л</td>
+            <td>5 200 – 6 900 руб</td>
+          </tr>
+          <tr>
+            <td><strong>2. Nordic Frost (Сканди иней)</strong> ⭐</td>
+            <td>Лессирующее белое масло-воск (полупрозрачное) 1.8 л</td>
+            <td>Бесцветный твердый воск / карнауба 1.0 л</td>
+            <td>~2.8 л</td>
+            <td>5 400 – 7 100 руб</td>
+          </tr>
+          <tr>
+            <td><strong>3. Натуральный янтарь (Без колера)</strong></td>
+            <td>Масло-воск бесцветное глянец/полуглянец 1.5 л</td>
+            <td>Второй слой масла-воска + располировка 1.5 л</td>
+            <td>~3.0 л</td>
+            <td>4 800 – 6 500 руб</td>
+          </tr>
+          <tr>
+            <td><strong>4. Брашированная патина (Tone-in-Tone)</strong></td>
+            <td>Масло цвет Орех (затирка пор) 1.0 л</td>
+            <td>Бесцветная паста с карнаубой на гребни 1.5 л</td>
+            <td>~2.5 л</td>
+            <td>5 800 – 7 600 руб</td>
+          </tr>
+          <tr>
+            <td><strong>5. Топленое молоко / Крем</strong></td>
+            <td>Масло цвет Bianco Crema (крем) 1.8 л</td>
+            <td>Бесцветный карнаубский воск 1.0 л</td>
+            <td>~2.8 л</td>
+            <td>5 500 – 7 200 руб</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Полноэкранный Lightbox модал -->
+  <div class="modal-overlay" id="lightboxModal" role="dialog" aria-modal="true">
+    <div class="modal-header">
+      <div class="modal-title-group">
+        <h2 id="modalTitle">Название варианта</h2>
+        <p id="modalSubtitle">Подзаголовок / Стиль</p>
+      </div>
+      <div style="display: flex; align-items: center; gap: 20px;">
+        <span class="modal-counter" id="modalCounter">1 / 5</span>
+        <button class="close-btn" id="closeBtn" title="Закрыть (Esc)">&times;</button>
+      </div>
+    </div>
+
+    <div class="modal-body">
+      <button class="nav-btn prev" id="prevBtn" title="Предыдущий (Стрелка влево)">&#10094;</button>
+      <div class="modal-img-container">
+        <img src="" alt="" class="modal-img" id="modalImg">
+      </div>
+      <button class="nav-btn next" id="nextBtn" title="Следующий (Стрелка вправо)">&#10095;</button>
+    </div>
+
+    <div class="modal-footer">
+      <div class="modal-footer-desc" id="modalDesc">Описание технологии и визуального эффекта...</div>
+      <div class="modal-footer-tech" id="modalTech">Технология</div>
+    </div>
+  </div>
+
+  <script>
+    const items = [
+      {
+        id: 1,
+        title: "Soft Amber (Мягкий янтарь)",
+        subtitle: "Разбавленный янтарный тон (≈30% пигмента)",
+        tag: "Фаворит пользователя",
+        recommended: true,
+        image: "larch_soft_amber_beams_1791360632431.jpg",
+        desc: "Деликатный, благородный янтарно-медовый тон без резкой банной желтизны. Полупрозрачный слой карнаубского воска дает мягкий сатиновый шелковистый отблеск, подчеркивая живую текстуру лиственницы и создавая уютный естественный контраст с шоколадным орехом балок.",
+        tech: "Масло 30% янтарь (1.5 л) + Паста с карнаубой (1 л)",
+        contrast: "Теплый, сбалансированный, благородный",
+        risk: "0% (без пятен, мягкая лессировка)"
+      },
+      {
+        id: 2,
+        title: "Nordic Frost (Скандинавский иней)",
+        subtitle: "Лессирующий полупрозрачный белый",
+        tag: "Светлая альтернатива",
+        recommended: true,
+        image: "larch_nordic_frost_beams_1791360650706.jpg",
+        desc: "Чистый, не меловой и не грязно-белый оттенок. Пигмент мягко вуалирует желтизну, сохраняя рельеф брашированной лиственницы. Идеально стыкуется с белыми рамами окон и дает контраст к балкам цвета темный орех.",
+        tech: "Лессирующее белое масло (1.8 л) + Твердый воск (1 л)",
+        contrast: "Высокий графичный контраст",
+        risk: "Низкий (микронизированный пигмент не забивает волокна)"
+      },
+      {
+        id: 3,
+        title: "Натуральный янтарь / Мёд",
+        subtitle: "Чистый монохром без пигментов",
+        tag: "Вариант без колера",
+        recommended: false,
+        image: "larch_amber_beams_1791354808183.jpg",
+        desc: "Вагонка не колеруется вообще! Покрывается только прозрачным маслом с высоким содержанием карнаубского воска. Лиственница сама проявляет янтарно-смолистый оттенок под оптической линзой воска.",
+        tech: "Бесцветное High Solid масло-воск (3.0 л)",
+        contrast: "Яркий золотистый контраст",
+        risk: "0% (без пигмента)"
+      },
+      {
+        id: 4,
+        title: "Брашированная патина в тон балкам",
+        subtitle: "3D-рельеф (Tone-in-Tone)",
+        tag: "Фактурный объем",
+        recommended: false,
+        image: "larch_patina_beams_1791354836460.jpg",
+        desc: "В углубления брашировки втирается пигмент орех (в цвет балок), а гребни полируются прозрачным воском. Создается трехмерная текстура, гармонично связывающая потолок с балками.",
+        tech: "Затирка маслом орех (1 л) + карнаубский воск (1.5 л)",
+        contrast: "Сложная нюансная фактура",
+        risk: "Требует аккуратной располировки гребней"
+      },
+      {
+        id: 5,
+        title: "Топленое молоко / Крем",
+        subtitle: "Классическое альпийское шале",
+        tag: "Базовый крем",
+        recommended: false,
+        image: "larch_cream_beams_1791374770558.jpg",
+        fallbackImg: "larch_cream_beams_1791354770558.jpg",
+        desc: "Теплый сливочно-кремовый фон с каплей охры. Смягчает пространство между массивными темными балками, однако в интерьерах с уже существующими белыми элементами может восприниматься слишком сливочным.",
+        tech: "Borma Hardwax Bianco Crema (1.8 л) + Воск Holzwachs (1 л)",
+        contrast: "Высокий мягкий контраст",
+        risk: "Теплый оттенок"
+      }
+    ];
+
+    // Рендер карточек в DOM
+    const grid = document.getElementById('galleryGrid');
+    items.forEach((item, index) => {
+      const card = document.createElement('div');
+      card.className = `card ${item.recommended ? 'badge-recommended' : ''}`;
+      
+      const imgSrc = item.fallbackImg || item.image;
+      
+      card.innerHTML = `
+        <div class="img-wrap">
+          <img src="${imgSrc}" alt="${item.title}" loading="lazy">
+          <span class="tag ${item.recommended ? 'rec' : ''}">${item.tag}</span>
+          <div class="zoom-hint">🔍 Во весь экран</div>
+        </div>
+        <div class="card-body">
+          <div class="card-title">${item.title}</div>
+          <div class="card-subtitle">${item.subtitle}</div>
+          <p class="desc">${item.desc}</p>
+          <ul class="tech-list">
+            <li><span>Состав:</span> <span>${item.tech}</span></li>
+            <li><span>Контраст:</span> <span>${item.contrast}</span></li>
+            <li><span>Риск пятен:</span> <span>${item.risk}</span></li>
+          </ul>
+          <button class="open-btn" onclick="openLightbox(${index}); event.stopPropagation();">
+            <span>Развернуть фото</span> ↗
+          </button>
+        </div>
+      `;
+
+      card.addEventListener('click', () => openLightbox(index));
+      grid.appendChild(card);
+    });
+
+    // Lightbox Logic
+    let currentIndex = 0;
+    const modal = document.getElementById('lightboxModal');
+    const modalImg = document.getElementById('modalImg');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalSubtitle = document.getElementById('modalSubtitle');
+    const modalCounter = document.getElementById('modalCounter');
+    const modalDesc = document.getElementById('modalDesc');
+    const modalTech = document.getElementById('modalTech');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const closeBtn = document.getElementById('closeBtn');
+
+    function openLightbox(index) {
+      currentIndex = index;
+      updateModal();
+      modal.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeLightbox() {
+      modal.classList.remove('active');
+      document.body.style.overflow = 'auto';
+    }
+
+    function updateModal() {
+      const item = items[currentIndex];
+      const imgSrc = item.fallbackImg || item.image;
+      
+      modalImg.style.opacity = '0.3';
+      modalImg.src = imgSrc;
+      modalImg.onload = () => {
+        modalImg.style.opacity = '1';
+      };
+
+      modalTitle.textContent = item.title;
+      modalSubtitle.textContent = item.subtitle;
+      modalCounter.textContent = `${currentIndex + 1} / ${items.length}`;
+      modalDesc.textContent = item.desc;
+      modalTech.textContent = `Расход на 30 м²: ${item.tech}`;
+    }
+
+    function nextSlide() {
+      currentIndex = (currentIndex + 1) % items.length;
+      updateModal();
+    }
+
+    function prevSlide() {
+      currentIndex = (currentIndex - 1 + items.length) % items.length;
+      updateModal();
+    }
+
+    prevBtn.addEventListener('click', (e) => { e.stopPropagation(); prevSlide(); });
+    nextBtn.addEventListener('click', (e) => { e.stopPropagation(); nextSlide(); });
+    closeBtn.addEventListener('click', closeLightbox);
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal || e.target.classList.contains('modal-body') || e.target.classList.contains('modal-img-container')) {
+        closeLightbox();
+      }
+    });
+
+    // Клавиатурная навигация
+    document.addEventListener('keydown', (e) => {
+      if (!modal.classList.contains('active')) return;
+      if (e.key === 'Escape') closeLightbox();
+      if (e.key === 'ArrowRight') nextSlide();
+      if (e.key === 'ArrowLeft') prevSlide();
+    });
+  </script>
+</body>
+</html>
